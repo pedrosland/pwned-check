@@ -16,18 +16,18 @@ type jsonPwned struct {
 const version = "v0.0.0"
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9000"
-	}
-
 	b = NewFilter(502000000, 1000000)
 
 	if loadPath := os.Getenv("FILTER_PATH"); loadPath != "" {
-		loadFromFile(loadPath)
+		loadFilterFromFile(loadPath)
 	}
 	if importPath := os.Getenv("IMPORT_PATH"); importPath != "" {
-		importFromFile(importPath)
+		importPasswordFile(importPath)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9000"
 	}
 
 	http.Handle("/pwnedpassword/", http.StripPrefix("/pwnedpassword/", http.HandlerFunc(hashHandler)))
