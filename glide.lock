@@ -1,0 +1,16 @@
+hash: 15e4b3831f22ea618f3aaf9aef514e70926c5e89e0d36ed03bf96574f0a2692b
+updated: 2018-05-15T23:12:19.29513647+01:00
+imports:
+- name: github.com/AndreasBriese/bbloom
+  version: 28f7e881ca57bc00e028f9ede9f0d9104cfeef5e
+- name: github.com/dataence/bloom
+  version: e24b032dccb1f55fd225c6d186fe6983419caf2e
+  subpackages:
+  - standard
+- name: github.com/willf/bitset
+  version: d860f346b89450988a379d7d705e83c58d1ea227
+- name: github.com/yourbasic/bloom
+  version: 04a87e707a81ec8fbbcf00594c548c3b44ed08ed
+testImports:
+- name: github.com/zhenjl/bloom
+  version: e24b032dccb1f55fd225c6d186fe6983419caf2e

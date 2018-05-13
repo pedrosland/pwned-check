@@ -1,0 +1,8 @@
+package: github.com/pedrosland/pwned-check
+import:
+- package: github.com/yourbasic/bloom
+  version: ~1.2.4
+- package: github.com/AndreasBriese/bbloom
+- package: github.com/dataence/bloom
+- package: github.com/willf/bitset
+  version: ^1.1.3
