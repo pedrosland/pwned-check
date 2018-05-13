@@ -1,5 +1,8 @@
 package main
 
+// This borrows from Stefan Nilsson's great (real) Bloom filter.
+// See https://github.com/yourbasic/bloom
+
 import (
 	"encoding/binary"
 	"encoding/json"
@@ -18,9 +21,11 @@ type Filter struct {
 	count   int64    // Estimate number of elements
 }
 
-// New creates an empty kind-of-Bloom filter with room for n elements
+// NewFilter creates an empty kind-of-Bloom filter with room for n elements
 // at a false-positive rate less than 1/p.
-func New(n int, p int) *Filter {
+// It is kind-of because it doesn't actully hash the data itself but
+// assumes that data is already hashed.
+func NewFilter(n int, p int) *Filter {
 	minWords := int(0.0325 * math.Log(float64(p)) * float64(n))
 	words := 1
 	for words < minWords {
@@ -98,7 +103,7 @@ func (f Filter) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON takes a []byte and populates the filter with its state
 func (f *Filter) UnmarshalJSON(b []byte) error {
 	jf := jsonFilter{}
-	err := json.Unmarshal(b, jf)
+	err := json.Unmarshal(b, &jf)
 	if err != nil {
 		return err
 	}

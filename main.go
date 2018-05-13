@@ -9,15 +9,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/yourbasic/bloom"
 )
 
-var b *bloom.Filter
+var b *Filter
 
 type jsonPwned struct {
-	Version string        `json:"version"`
-	Filter  *bloom.Filter `json:"filter"`
+	Version string  `json:"version"`
+	Filter  *Filter `json:"filter"`
 }
 
 const version = "v0.0.0"
@@ -28,7 +26,7 @@ func main() {
 		port = "9000"
 	}
 
-	b = bloom.New(502000000, 1000000)
+	b = NewFilter(502000000, 1000000)
 
 	if loadPath := os.Getenv("FILTER_PATH"); loadPath != "" {
 		loadFromFile(loadPath)
@@ -78,7 +76,7 @@ func importFromFile(importPath string) {
 			log.Fatalf("error decoding hex string %q from password hash file: %s", scanner.Text(), err)
 		}
 
-		b.AddHash2(hash)
+		b.AddHash(hash)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("error reading password hash file: %s", err)
@@ -110,7 +108,7 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error decoding hex string %q: %s", hash, err)
 	}
 
-	found := b.TestHash2(hashBytes)
+	found := b.TestHash(hashBytes)
 
 	if found {
 		w.Write([]byte("oh darn"))

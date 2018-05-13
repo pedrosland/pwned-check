@@ -1,175 +1,88 @@
 package main
 
 import (
-	"bufio"
-	"encoding/binary"
 	"encoding/hex"
-	"fmt"
-	"log"
-	"os"
+	"encoding/json"
 	"testing"
-
-	"github.com/AndreasBriese/bbloom"
-	dataence "github.com/dataence/bloom/standard"
-	yourbasic "github.com/yourbasic/bloom"
 )
 
-var wordlist1 [][]byte
-var wordlist2 []uint64
-
-const n = 1.0 << 19
-const p = 10000
+var apple []byte
+var orange []byte
+var pear []byte
 
 func TestMain(m *testing.M) {
-	file, err := os.Open("words.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	wordlist1 = make([][]byte, n)
-	wordlist2 = make([]uint64, n)
-	for i := range wordlist1 {
-		if scanner.Scan() {
-			wordlist1[i] = []byte(scanner.Text())
-			hash, err := hex.DecodeString(scanner.Text())
-			if err != nil {
-				panic(err)
-			}
-			wordlist2[i] = binary.BigEndian.Uint64(hash)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("\n###############\nbbloom_test.go")
-	fmt.Printf("Benchmarks relate to ?? OP. --> output/%d op/ns\n###############\n\n", len(wordlist1))
-
-	// fmt.Printf("Yourbasic false positive rate: %.10f\n", yourbasic.New(n, p).EstimateFalsePositiveRate(500000*p))
-	// fmt.Printf("Yourbasic false positive rate: %.10f\n", yourbasic.New(n, p).EstimateFalsePositiveRateHash(500000*p))
+	apple = mustDecode("d0be2dc421be4fcd0172e5afceea3970e2f3d940")
+	orange = mustDecode("ef0ebbb77298e1fbd81f756a4efc35b977c93dae")
+	pear = mustDecode("3e2bf5faa2c3fec1f84068a073b7e51d7ad44a35")
 
 	m.Run()
 }
 
-func BenchmarkYourbasic(b *testing.B) {
-	bf := yourbasic.New(n, p)
+func mustDecode(s string) []byte {
+	bytes, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
+}
 
-	for i := range wordlist1 {
-		bf.AddByte(wordlist1[i])
+func TestFilter(t *testing.T) {
+	f := NewFilter(4, 4)
+	if found := f.TestHash(apple); found {
+		t.Error("found apple, expected no apple")
+	}
+	if found := f.AddHash(apple); found {
+		t.Error("found apple when adding hash, expected no apple")
+	}
+	if found := f.TestHash(apple); !found {
+		t.Error("found no apple, expected apple")
 	}
 
-	b.ResetTimer()
+	if found := f.TestHash(orange); found {
+		t.Error("found orange, expected no orange")
+	}
+	if found := f.AddHash(orange); found {
+		t.Error("found orange when adding hash, expected no orange")
+	}
+	if found := f.TestHash(orange); !found {
+		t.Error("found no orange, expected orange")
+	}
 
-	for i := 0; i < b.N; i++ {
-		for i := range wordlist1 {
-			bf.TestByte(wordlist1[i])
-		}
+	if count, expected := f.Count(), int64(2); count != expected {
+		t.Errorf("got count of %d, expected %d", count, expected)
 	}
 }
 
-func BenchmarkYourbasicNoHash(b *testing.B) {
-	bf := yourbasic.New(n, p)
+func TestFilterJSON(t *testing.T) {
+	f := NewFilter(4, 2)
+	f.AddHash(apple)
+	f.AddHash(orange)
 
-	for i := range wordlist2 {
-		bf.AddHash(wordlist2[i])
+	bytes, err := json.Marshal(&f)
+	if err != nil {
+		t.Errorf("unexpected error marshalling filter: %s", err)
 	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for i := range wordlist2 {
-			bf.TestHash(wordlist2[i])
-		}
-	}
-}
-
-func BenchmarkBbloom(b *testing.B) {
-	// this filter offers json output
-
-	// bf := bbloom.New(n, 1/p)
-	bf := bbloom.New(n, 0.0001)
-
-	for i := range wordlist1 {
-		bf.Add(wordlist1[i])
+	f = NewFilter(8, 1)
+	err = json.Unmarshal(bytes, f)
+	if err != nil {
+		t.Errorf("unexpected error unmarshalling filter: %s", err)
 	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for i := range wordlist1 {
-			bf.Has(wordlist1[i])
-		}
+	if count := f.Count(); count != 2 {
+		t.Errorf("got count %d, expected 2", count)
 	}
-}
-
-func BenchmarkDataence(b *testing.B) {
-	bf := dataence.New(n)
-
-	for i := range wordlist1 {
-		bf.Add(wordlist1[i])
+	if lookups := f.lookups; f.lookups != 1 {
+		t.Errorf("got lookups %d, expected 1", lookups)
 	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for i := range wordlist1 {
-			bf.Check(wordlist1[i])
-		}
+	if found := f.TestHash(apple); !found {
+		t.Errorf("found no apple, expected apple")
+	}
+	if found := f.TestHash(orange); !found {
+		t.Errorf("found no orange, expected orange")
+	}
+	if found := f.TestHash(pear); found {
+		t.Errorf("found pear, expected no pear")
 	}
 }
-
-func BenchmarkLeveldb(b *testing.B) {
-	bf := NewFilter(nil, wordlist1, p/10)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for i := range wordlist1 {
-			bf.MayContain(wordlist1[i])
-		}
-	}
-}
-
-// type H struct {
-// 	item []byte
-// }
-
-// func (h *H) Write(b []byte) (int, error) {
-// 	h.item = b
-// 	panic(len(b))
-// 	return len(b), nil
-// }
-
-// func (h *H) BlockSize() int {
-// 	return 1
-// }
-
-// func (h *H) Size() int {
-// 	return 160
-// }
-
-// func (h *H) Sum(b []byte) []byte {
-// 	s := append(b, h.item...)
-// 	return s
-// }
-
-// func (h *H) Reset() {
-// }
-
-// func BenchmarkDataenceHasher(b *testing.B) {
-// 	bf := dataence.New(n)
-// 	h := new(H)
-// 	bf.SetHasher(h)
-
-// 	for i := range wordlist2 {
-// 		bf.Add(binary.BigEndian.(wordlist2[i]))
-// 	}
-
-// 	b.ResetTimer()
-
-// 	for i := 0; i < b.N; i++ {
-// 		for i := range wordlist2 {
-// 			bf.Check(wordlist2[i])
-// 		}
-// 	}
-// }
