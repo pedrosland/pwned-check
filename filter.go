@@ -1,4 +1,4 @@
-package main
+package pwned
 
 // This borrows from Stefan Nilsson's great (real) Bloom filter.
 // See https://github.com/yourbasic/bloom

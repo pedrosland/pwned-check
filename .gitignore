@@ -1,3 +1,5 @@
-pwned-check
 pwned-data.json
 pwned-passwords-*
+
+cmd/pwned-save/pwned-save
+cmd/pwned-serve/pwned-serve

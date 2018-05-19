@@ -1,16 +1,19 @@
-package main
+package pwned
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
-func hashHandler(w http.ResponseWriter, r *http.Request) {
+// Handler implements ServeHTTP
+type Handler struct {
+	Filter *Filter
+}
+
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hash := strings.TrimSuffix(r.URL.Path, "/")
 
 	if hash == "" {
@@ -33,7 +36,7 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error decoding hex string %q: %s", hash, err)
 	}
 
-	found := b.TestHash(hashBytes)
+	found := h.Filter.TestHash(hashBytes)
 
 	if found {
 		w.Write([]byte("oh darn"))
@@ -42,38 +45,4 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Write([]byte("you're good for now"))
 	}
-}
-
-func saveHandler(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Create("pwned-data.json")
-	if err != nil {
-		log.Printf("error opening data file to write: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Error")
-		return
-	}
-
-	data := jsonPwned{
-		Filter:  b,
-		Version: version,
-	}
-
-	encoder := json.NewEncoder(f)
-	err = encoder.Encode(&data)
-	if err != nil {
-		log.Printf("error writing data to file: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Error")
-		return
-	}
-
-	err = f.Close()
-	if err != nil {
-		log.Printf("error closing file: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Error")
-		return
-	}
-
-	io.WriteString(w, "OK")
 }
