@@ -8,8 +8,6 @@ import (
 	"github.com/pedrosland/pwned-check"
 )
 
-const version = "v0.0.0"
-
 func main() {
 	var savePath string
 	var importPasswordPaths string
@@ -40,5 +38,5 @@ func main() {
 		pwned.ImportPasswordFile(filter, numHashes, path)
 	}
 
-	pwned.SaveFilterToFile(filter, version, savePath)
+	pwned.SaveFilterToFile(filter, savePath)
 }

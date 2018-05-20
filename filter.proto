@@ -1,0 +1,13 @@
+syntax = "proto3";
+package proto;
+
+message State {
+    int32 version = 1;
+    Filter filter = 2;
+
+    message Filter {
+        bytes data = 1;
+        int32 lookups = 2;
+        int64 count = 3;
+    }
+}

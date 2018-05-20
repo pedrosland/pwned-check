@@ -1,20 +1,25 @@
 package pwned
 
+//go:generate rm -rf $PWD/proto/
+//go:generate mkdir $PWD/proto/
+//go:generate protoc -I=$PWD --go_out=proto $PWD/filter.proto
+
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/golang/protobuf/proto"
+	pb "github.com/pedrosland/pwned-check/proto"
 )
 
-type jsonPwned struct {
-	Version string  `json:"version"`
-	Filter  *Filter `json:"filter"`
-}
+const fileVersion = 1
 
 // ImportPasswordFile opens a file and loads the passwords into the given filter
 func ImportPasswordFile(filter *Filter, numHashes int64, importPath string) {
@@ -26,7 +31,7 @@ func ImportPasswordFile(filter *Filter, numHashes int64, importPath string) {
 	}
 	defer f.Close() // ignore error, we were only reading
 
-	err = readPasswordList(filter, numHashes, f)
+	err = ReadPasswordList(filter, numHashes, f)
 	if err != nil {
 		log.Fatalf("error processing password hash file: %s", err)
 	}
@@ -34,8 +39,8 @@ func ImportPasswordFile(filter *Filter, numHashes int64, importPath string) {
 	log.Printf("loaded %d hashed passwords from file %s", filter.Count(), importPath)
 }
 
-// readPasswordList reads from a reader and loads its password hashes into the filter
-func readPasswordList(filter *Filter, numHashes int64, r io.Reader) error {
+// ReadPasswordList reads from a reader and loads its password hashes into the filter
+func ReadPasswordList(filter *Filter, numHashes int64, r io.Reader) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		if count := filter.Count(); count >= numHashes {
@@ -57,43 +62,62 @@ func readPasswordList(filter *Filter, numHashes int64, r io.Reader) error {
 	return nil
 }
 
-// LoadFilterFromFile reads a saved filter from file and returns it
+// LoadFilterFromFile reads a saved Filter from file and returns it.
 func LoadFilterFromFile(loadPath string) *Filter {
+	log.Printf("loading filter from file %s", loadPath)
+
 	f, err := os.Open(loadPath)
 	if err != nil {
 		log.Fatalf("error opening stored filter data from %q: %s", loadPath, err)
 	}
 	defer f.Close() // ignore error, we were only reading
 
-	decoder := json.NewDecoder(f)
-	data := jsonPwned{}
-	err = decoder.Decode(&data)
+	filter, err := LoadFilter(f)
 	if err != nil {
-		log.Fatalf("error reading stored filter data: %s", err)
+		log.Printf("error loading filter: %s", err)
 	}
 
-	log.Printf("loaded %d entries from %s", data.Filter.Count(), loadPath)
+	log.Printf("loaded %d entries from %s", filter.Count(), loadPath)
 
-	return data.Filter
+	return filter
+}
+
+// LoadFilter reads a Filter from a reader and returns it.
+func LoadFilter(r io.Reader) (*Filter, error) {
+	gz, err := gzip.NewReader(r)
+	if err != nil {
+		return nil, fmt.Errorf("create gzip reader: %s", err)
+	}
+	defer gz.Close() // ignore error
+
+	bytes, err := ioutil.ReadAll(gz)
+	if err != nil {
+		return nil, fmt.Errorf("decompres file: %s", err)
+	}
+
+	state := &pb.State{}
+	err = proto.Unmarshal(bytes, state)
+	if err != nil {
+		return nil, fmt.Errorf("decode state: %s", err)
+	}
+
+	// nolint - allow memory to be freed as early as possible
+	bytes = nil
+
+	return filterFromPB(state.Filter), nil
 }
 
 // SaveFilterToFile saves the given filter to file
-func SaveFilterToFile(filter *Filter, version string, savePath string) {
-	f, err := os.Create("pwned-data.json")
+func SaveFilterToFile(filter *Filter, savePath string) {
+	f, err := os.Create(savePath)
 	if err != nil {
 		log.Fatalf("error opening data file to write: %s", err)
 		return
 	}
 
-	data := jsonPwned{
-		Filter:  filter,
-		Version: version,
-	}
-
-	encoder := json.NewEncoder(f)
-	err = encoder.Encode(&data)
+	size, err := SaveFilter(f, filter)
 	if err != nil {
-		log.Fatalf("error writing data to file: %s", err)
+		log.Fatalf("error saving filter: %s", err)
 	}
 
 	err = f.Close()
@@ -102,5 +126,42 @@ func SaveFilterToFile(filter *Filter, version string, savePath string) {
 		return
 	}
 
-	log.Println("filter saved")
+	log.Printf("filter saved (%d uncompressed bytes)", size)
+}
+
+// SaveFilter writes the given filter to the writer.
+// It will destroy the filter while this is happening.
+func SaveFilter(w io.Writer, filter *Filter) (int, error) {
+	state := &pb.State{
+		Filter:  filter.getPB(),
+		Version: fileVersion,
+	}
+
+	// release the old filter as soon as we can
+	*filter = *NewFilter(2, 2)
+
+	bytes, err := proto.Marshal(state)
+	if err != nil {
+		return 0, fmt.Errorf("encode state: %s", err)
+	}
+
+	// nolint - allow to free memory as soon as possible
+	state = nil
+
+	gz, err := gzip.NewWriterLevel(w, gzip.BestCompression)
+	if err != nil {
+		return 0, fmt.Errorf("create gzip writer: %s", err)
+	}
+
+	size, err := gz.Write(bytes)
+	if err != nil {
+		return 0, fmt.Errorf("compress data: %s", err)
+	}
+
+	err = gz.Close()
+	if err != nil {
+		return 0, fmt.Errorf("close gz writer: %s", err)
+	}
+
+	return size, nil
 }

@@ -8,8 +8,6 @@ import (
 	pwned "github.com/pedrosland/pwned-check"
 )
 
-const version = "v0.0.0"
-
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -18,7 +16,7 @@ func main() {
 
 	loadPath := os.Getenv("FILTER_PATH")
 	if loadPath == "" {
-		log.Fatalln("must specify the path to the filter to load")
+		log.Fatalln("must specify the path to the filter to load in environment variable FILTER_PATH")
 	}
 	filter := pwned.LoadFilterFromFile(loadPath)
 

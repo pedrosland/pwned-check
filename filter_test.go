@@ -2,7 +2,6 @@ package pwned
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"testing"
 )
 
@@ -53,28 +52,46 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-func TestFilterJSON(t *testing.T) {
+// func TestFilterJSON(t *testing.T) {
+// 	f := NewFilter(4, 2)
+// 	f.AddHash(apple)
+// 	f.AddHash(orange)
+
+// 	bytes, err := json.Marshal(&f)
+// 	if err != nil {
+// 		t.Errorf("unexpected error marshalling filter: %s", err)
+// 	}
+
+// 	f = NewFilter(8, 1)
+// 	err = json.Unmarshal(bytes, f)
+// 	if err != nil {
+// 		t.Errorf("unexpected error unmarshalling filter: %s", err)
+// 	}
+
+// 	if count := f.Count(); count != 2 {
+// 		t.Errorf("got count %d, expected 2", count)
+// 	}
+// 	if lookups := f.lookups; f.lookups != 1 {
+// 		t.Errorf("got lookups %d, expected 1", lookups)
+// 	}
+
+// 	if found := f.TestHash(apple); !found {
+// 		t.Errorf("found no apple, expected apple")
+// 	}
+// 	if found := f.TestHash(orange); !found {
+// 		t.Errorf("found no orange, expected orange")
+// 	}
+// 	if found := f.TestHash(pear); found {
+// 		t.Errorf("found pear, expected no pear")
+// 	}
+// }
+
+func TestPB(t *testing.T) {
 	f := NewFilter(4, 2)
 	f.AddHash(apple)
 	f.AddHash(orange)
 
-	bytes, err := json.Marshal(&f)
-	if err != nil {
-		t.Errorf("unexpected error marshalling filter: %s", err)
-	}
-
-	f = NewFilter(8, 1)
-	err = json.Unmarshal(bytes, f)
-	if err != nil {
-		t.Errorf("unexpected error unmarshalling filter: %s", err)
-	}
-
-	if count := f.Count(); count != 2 {
-		t.Errorf("got count %d, expected 2", count)
-	}
-	if lookups := f.lookups; f.lookups != 1 {
-		t.Errorf("got lookups %d, expected 1", lookups)
-	}
+	f2 := filterFromPB(f.getPB())
 
 	if found := f.TestHash(apple); !found {
 		t.Errorf("found no apple, expected apple")
@@ -84,5 +101,9 @@ func TestFilterJSON(t *testing.T) {
 	}
 	if found := f.TestHash(pear); found {
 		t.Errorf("found pear, expected no pear")
+	}
+
+	if c1, c2 := f.Count(), f2.Count(); c1 != c2 {
+		t.Errorf("got count %d, expected %d", c2, c1)
 	}
 }

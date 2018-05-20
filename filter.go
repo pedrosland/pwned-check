@@ -5,8 +5,9 @@ package pwned
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"math"
+
+	pb "github.com/pedrosland/pwned-check/proto"
 )
 
 const (
@@ -83,34 +84,30 @@ func (f *Filter) Count() int64 {
 	return f.count
 }
 
-type jsonFilter struct {
-	Data    []uint64 `json:"data"`
-	Lookups int      `json:"lookups"`
-	Count   int64    `json:"count"`
-}
+func (f Filter) getPB() *pb.State_Filter {
+	b := make([]byte, len(f.data)*8)
 
-// MarshalJSON returns a []byte containing the JSON representation of the filter
-func (f Filter) MarshalJSON() ([]byte, error) {
-	jf := jsonFilter{
-		Data:    f.data,
-		Lookups: f.lookups,
+	for i := 0; i < len(f.data); i++ {
+		binary.BigEndian.PutUint64(b[i*8:], f.data[i])
+	}
+
+	return &pb.State_Filter{
 		Count:   f.count,
+		Data:    b,
+		Lookups: int32(f.lookups),
 	}
-
-	return json.Marshal(&jf)
 }
 
-// UnmarshalJSON takes a []byte and populates the filter with its state
-func (f *Filter) UnmarshalJSON(b []byte) error {
-	jf := jsonFilter{}
-	err := json.Unmarshal(b, &jf)
-	if err != nil {
-		return err
+func filterFromPB(state *pb.State_Filter) *Filter {
+	b := make([]uint64, len(state.Data)/8)
+
+	for i := 0; i < len(b); i++ {
+		b[i] = binary.BigEndian.Uint64(state.Data[i*8:])
 	}
 
-	f.data = jf.Data
-	f.lookups = jf.Lookups
-	f.count = jf.Count
-
-	return nil
+	return &Filter{
+		count:   state.Count,
+		data:    b,
+		lookups: int(state.Lookups),
+	}
 }
