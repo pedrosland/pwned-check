@@ -22,7 +22,9 @@ func main() {
 	}
 	filter := pwned.LoadFilterFromFile(loadPath)
 
-	http.Handle("/pwnedpassword/", http.StripPrefix("/pwnedpassword", pwned.Handler{Filter: filter, Logger: logger}))
+	pwnedHandler := pwned.Handler{Filter: filter, Logger: logger}
+	http.Handle("/pwnedpassword/", http.StripPrefix("/pwnedpassword", http.HandlerFunc(pwnedHandler.CompatPassword)))
+	http.Handle("/pwnedhash/", http.StripPrefix("/pwnedhash", http.HandlerFunc(pwnedHandler.Hash)))
 
 	logger.Printf("starting server on port %s", port)
 
