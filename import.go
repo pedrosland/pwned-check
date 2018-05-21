@@ -6,6 +6,7 @@ package pwned
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"encoding/hex"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/pedrosland/pwned-check/proto"
@@ -42,24 +42,24 @@ func ImportPasswordFile(filter *Filter, numHashes int64, importPath string) {
 // ReadPasswordList reads from a reader and loads its password hashes into the filter
 func ReadPasswordList(filter *Filter, numHashes int64, r io.Reader) error {
 	scanner := bufio.NewScanner(r)
+	hash := make([]byte, 20)
+	var err error
 	for scanner.Scan() {
-		if count := filter.Count(); count >= numHashes {
-			return fmt.Errorf("filter full: tried to add %d passwords but capacity is %d", count+1, numHashes)
+		if filter.count >= numHashes {
+			return fmt.Errorf("filter full: tried to add %d passwords but capacity is %d", filter.count+1, numHashes)
 		}
 
 		// lines look like: 13c3d0d02ffc0e82abc1dd6b59d441be073d4b15:123
-		line := strings.SplitN(scanner.Text(), ":", 2)
-		hash, err := hex.DecodeString(line[0])
+		line := scanner.Bytes()
+		index := bytes.IndexRune(line, ':')
+		_, err = hex.Decode(hash, line[:index])
 		if err != nil {
-			return fmt.Errorf("error decoding hex string %q: %s", line[0], err)
+			return fmt.Errorf("error decoding hex string %q: %s", []byte(line), err)
 		}
 
 		filter.AddHash(hash)
 	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // LoadFilterFromFile reads a saved Filter from file and returns it.
