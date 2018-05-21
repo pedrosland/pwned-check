@@ -12,7 +12,7 @@ cache:
     - $HOME/pwned-passwords/
 
 before_install:
-  - .pedrosland/pwned-check/travis/get-protoc.sh
+  - pedrosland/pwned-check/.travis/get-protoc.sh
   - go get -u github.com/golang/protobuf/protoc-gen-go
 #  - ./travis/get-pwned-passwords.sh
 
