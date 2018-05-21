@@ -81,7 +81,7 @@ func BenchmarkReadPasswordList(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		readPasswordList(filter, 100000000, reader)
+		ReadPasswordList(filter, 100000000, reader)
 		reader.Reset()
 	}
 }

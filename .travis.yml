@@ -4,7 +4,7 @@ go:
 addons:
   apt:
     packages:
-      - p7zip
+      - p7zip-full
 # - runc
 
 env:
