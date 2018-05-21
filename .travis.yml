@@ -7,6 +7,10 @@ addons:
       - p7zip
 # - runc
 
+env:
+  global:
+    - PATH="$HOME/protoc/bin:$PATH"
+
 cache:
   directories:
     - $HOME/pwned-passwords/
