@@ -23,13 +23,22 @@ const fileVersion = 1
 
 // ImportPasswordFile opens a file and loads the passwords into the given filter
 func ImportPasswordFile(filter *Filter, numHashes int64, importPath string) {
-	log.Printf("importing password hashes from file %s", importPath)
+	var f io.ReadCloser
+	var err error
 
-	f, err := os.Open(importPath)
-	if err != nil {
-		log.Fatalf("error opening password hashes: %s", err)
+	if importPath == "-" {
+		log.Println("importing password hashes from stdin")
+
+		f = os.Stdin
+	} else {
+		log.Printf("importing password hashes from file %s", importPath)
+
+		f, err = os.Open(importPath)
+		if err != nil {
+			log.Fatalf("error opening password hashes: %s", err)
+		}
+		defer f.Close() // ignore error, we were only reading
 	}
-	defer f.Close() // ignore error, we were only reading
 
 	err = ReadPasswordList(filter, numHashes, f)
 	if err != nil {

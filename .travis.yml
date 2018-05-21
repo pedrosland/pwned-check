@@ -1,0 +1,25 @@
+language: go
+go:
+  - "1.10"
+addons:
+  apt:
+    packages:
+      - p7zip
+# - runc
+
+cache:
+  directories:
+    - $HOME/pwned-passwords/
+
+before_install:
+  - ./travis/get-protoc.sh
+  - go get -u github.com/golang/protobuf/protoc-gen-go
+#  - ./travis/get-pwned-passwords.sh
+
+script:
+#  - go generate
+  - go test -v ./...
+  - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-save
+  - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-serve
+  - 7za x $HOME/pwned-passwords/pwned-passwords-2.0.txt.7z -so | ./pwned-save -import-file=- -num-passwords=502000000 -save-file=pwned-data.bin
+#  - docker build .
