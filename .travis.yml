@@ -1,4 +1,7 @@
 language: go
+services:
+  - docker
+sudo: true
 go:
   - "1.10"
 addons:
