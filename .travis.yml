@@ -30,5 +30,5 @@ script:
   - go test -v ./...
   - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-save
   - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-serve
-  - "travis_wait sh -c '7za x $HOME/pwned-passwords/pwned-passwords-2.0.txt.7z -so | ./pwned-save -import-file=- -num-passwords=502000000 -save-file=pwned-data.bin'"
+  - travis_wait $TRAVIS_BUILD_DIR/.travis/save-filter.sh
 #  - docker build .
