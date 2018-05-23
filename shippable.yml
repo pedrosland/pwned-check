@@ -9,7 +9,7 @@ build:
     image_tag: bionic-20180426
     pull: true
   ci:
-    - sudo apt-get install -y p7zip-full
+    - sudo apt-get install -y p7zip-full unzip curl
     - $SHIPPABLE_BUILD_DIR/.travis/get-protoc.sh
     - go get -u github.com/golang/protobuf/protoc-gen-go
     - $SHIPPABLE_BUILD_DIR/.travis/get-pwned-passwords.sh
