@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pedrosland/pwned-check"
 )
@@ -31,6 +32,9 @@ func main() {
 		return
 	}
 
+	cancelPrinter := startPrinter()
+	defer cancelPrinter()
+
 	filter := pwned.NewFilter(int(numHashes), falsePositiveRate)
 
 	paths := strings.Split(importPasswordPaths, ",")
@@ -39,4 +43,17 @@ func main() {
 	}
 
 	pwned.SaveFilterToFile(filter, savePath)
+}
+
+func startPrinter() func() {
+	ticker := time.NewTicker(30 * time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println(".")
+			}
+		}
+	}()
+	return ticker.Stop
 }
