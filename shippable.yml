@@ -1,0 +1,36 @@
+language: go
+
+go:
+  - "1.10"
+
+build:
+  cache: true
+  cache_dir_list:
+    - $HOME/pwned-passwords/
+  pre_ci_boot:
+    image_name: ubuntu
+    image_tag: bionic-20180426
+    pull: true
+  ci:
+    - export PATH="/usr/local/go/bin:$PATH"
+    - sudo apt-get install -y p7zip-full unzip curl
+    - curl -Lo - https://dl.google.com/go/go1.10.2.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+    - $SHIPPABLE_BUILD_DIR/.travis/get-protoc.sh
+    - go get -u github.com/golang/protobuf/protoc-gen-go
+    - $SHIPPABLE_BUILD_DIR/.travis/get-pwned-passwords.sh
+    - go test -v ./...
+    - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-save
+    - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-serve
+    - $SHIPPABLE_BUILD_DIR/.travis/save-filter.sh
+
+# post_ci:
+# - docker build -t pedrosland/pwned-check:$GIT_TAG_NAME .
+# - if [ "$GIT_TAG_NAME" == "v*?????" ]; then docker push pedrosland/pwned-check:$GIT_TAG_NAME; fi
+
+# integrations:
+#   hub:
+#     - integrationName: DockerHub
+#       type: dockerRegistryLogin
+#       tags:
+#         only:
+#           - "v*"
