@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - "1.9"
+
+build:
+  pre_ci_boot:
+    image_name: ubuntu
+    image_tag: bionic-20180426
+    pull: true
+  ci:
+    - echo 1
+    - sudo apt install p7zip-full
