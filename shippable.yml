@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - "1.9"
+  - "1.10"
 
 build:
   pre_ci_boot:
@@ -9,5 +9,23 @@ build:
     image_tag: bionic-20180426
     pull: true
   ci:
-    - echo 1
-    - sudo apt install p7zip-full
+    - sudo apt-get install -y p7zip-full
+    - $SHIPPABLE_BUILD_DIR/.travis/get-protoc.sh
+    - go get -u github.com/golang/protobuf/protoc-gen-go
+    - $SHIPPABLE_BUILD_DIR/.travis/get-pwned-passwords.sh
+    - go test -v ./...
+    - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-save
+    - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-serve
+    - $SHIPPABLE_BUILD_DIR/.travis/save-filter.sh
+
+# post_ci:
+# - docker build -t pedrosland/pwned-check:$GIT_TAG_NAME .
+# - if [ "$GIT_TAG_NAME" == "v*?????" ]; then docker push pedrosland/pwned-check:$GIT_TAG_NAME; fi
+
+# integrations:
+#   hub:
+#     - integrationName: DockerHub
+#       type: dockerRegistryLogin
+#       tags:
+#         only:
+#           - "v*"
