@@ -4,6 +4,9 @@ go:
   - "1.10"
 
 build:
+  cache: true
+  cache_dir_list:
+    - $HOME/pwned-passwords/
   pre_ci_boot:
     image_name: ubuntu
     image_tag: bionic-20180426
