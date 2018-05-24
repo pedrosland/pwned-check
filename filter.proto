@@ -6,8 +6,8 @@ message State {
     Filter filter = 2;
 
     message Filter {
-        bytes data = 1;
-        int32 lookups = 2;
-        int64 count = 3;
+        int32 lookups = 1;
+        int64 count = 2;
+        int64 size = 3;
     }
 }

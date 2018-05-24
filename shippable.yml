@@ -32,12 +32,12 @@ build:
     - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' github.com/pedrosland/pwned-check/cmd/pwned-serve
     # export filter
     - $SHIPPABLE_BUILD_DIR/.travis/save-filter.sh
-
-post_ci:
-  # - docker build -t pedrosland/pwned-check:$GIT_TAG_NAME .
-  # - if [[ "$GIT_TAG_NAME" = "v"* ]]; then docker push pedrosland/pwned-check:$GIT_TAG_NAME; fi
-  - docker build -t pedrosland/pwned-check:latest .
-  - then docker push pedrosland/pwned-check:latest
+  # post_ci only runs on success
+  post_ci:
+    # - docker build -t pedrosland/pwned-check:$GIT_TAG_NAME .
+    # - if [[ "$GIT_TAG_NAME" = "v"* ]]; then docker push pedrosland/pwned-check:$GIT_TAG_NAME; fi
+    - docker build -t pedrosland/pwned-check:latest .
+    - docker push pedrosland/pwned-check:latest
 
 integrations:
   hub:
