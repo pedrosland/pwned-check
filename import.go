@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -99,21 +98,22 @@ func LoadFilter(r io.Reader) (*Filter, error) {
 	}
 	defer gz.Close() // ignore error
 
-	bytes, err := ioutil.ReadAll(gz)
-	if err != nil {
-		return nil, fmt.Errorf("decompres file: %s", err)
-	}
-
 	state := &pb.State{}
-	err = proto.Unmarshal(bytes, state)
+	err = proto.Unmarshal(gz.Extra, state)
 	if err != nil {
 		return nil, fmt.Errorf("decode state: %s", err)
 	}
 
-	// nolint - allow memory to be freed as early as possible
-	bytes = nil
+	if state.Version != 1 {
+		return nil, fmt.Errorf("unsupported version: %d", state.Version)
+	}
 
-	return filterFromPB(state.Filter), nil
+	f, err := filterFrom(state.Filter, gz)
+	if err != nil {
+		return nil, fmt.Errorf("decompress file: %s", err)
+	}
+
+	return f, nil
 }
 
 // SaveFilterToFile saves the given filter to file
@@ -146,25 +146,28 @@ func SaveFilter(w io.Writer, filter *Filter) (int, error) {
 		Version: fileVersion,
 	}
 
-	// release the old filter as soon as we can
-	*filter = *NewFilter(2, 2)
-
 	bytes, err := proto.Marshal(state)
 	if err != nil {
 		return 0, fmt.Errorf("encode state: %s", err)
 	}
-
-	// nolint - allow to free memory as soon as possible
-	state = nil
 
 	gz, err := gzip.NewWriterLevel(w, gzip.BestCompression)
 	if err != nil {
 		return 0, fmt.Errorf("create gzip writer: %s", err)
 	}
 
-	size, err := gz.Write(bytes)
+	gz.Extra = bytes
+
+	bufGz := bufio.NewWriter(gz)
+
+	size, err := filter.writeBytes(bufGz)
 	if err != nil {
 		return 0, fmt.Errorf("compress data: %s", err)
+	}
+
+	err = bufGz.Flush()
+	if err != nil {
+		return 0, fmt.Errorf("compress data (flush): %s", err)
 	}
 
 	err = gz.Close()

@@ -5,6 +5,7 @@ package pwned
 
 import (
 	"encoding/binary"
+	"io"
 	"math"
 
 	pb "github.com/pedrosland/pwned-check/proto"
@@ -85,29 +86,42 @@ func (f *Filter) Count() int64 {
 }
 
 func (f Filter) getPB() *pb.State_Filter {
-	b := make([]byte, len(f.data)*8)
-
-	for i := 0; i < len(f.data); i++ {
-		binary.BigEndian.PutUint64(b[i*8:], f.data[i])
-	}
-
 	return &pb.State_Filter{
 		Count:   f.count,
-		Data:    b,
 		Lookups: int32(f.lookups),
+		Size:    int64(len(f.data) * 8),
 	}
 }
 
-func filterFromPB(state *pb.State_Filter) *Filter {
-	b := make([]uint64, len(state.Data)/8)
+func (f Filter) writeBytes(w io.Writer) (int, error) {
+	b := make([]byte, 8, 8)
 
-	for i := 0; i < len(b); i++ {
-		b[i] = binary.BigEndian.Uint64(state.Data[i*8:])
+	for i := 0; i < len(f.data); i++ {
+		binary.BigEndian.PutUint64(b, f.data[i])
+		_, err := w.Write(b)
+		if err != nil {
+			return (i - 1) * 8, err
+		}
+	}
+	return len(f.data) * 8, nil
+}
+
+func filterFrom(state *pb.State_Filter, r io.Reader) (*Filter, error) {
+	data := make([]uint64, state.Size/8)
+	b := make([]byte, 8, 8)
+
+	for i := 0; i < len(data); i++ {
+		_, err := r.Read(b)
+		if err != nil && i < len(data)-1 {
+			return nil, err
+		}
+		data[i] = binary.BigEndian.Uint64(b)
 	}
 
-	return &Filter{
+	f := &Filter{
 		count:   state.Count,
-		data:    b,
+		data:    data,
 		lookups: int(state.Lookups),
 	}
+	return f, nil
 }

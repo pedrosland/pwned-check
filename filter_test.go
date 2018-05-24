@@ -1,6 +1,7 @@
 package pwned
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 )
@@ -91,7 +92,16 @@ func TestPB(t *testing.T) {
 	f.AddHash(apple)
 	f.AddHash(orange)
 
-	f2 := filterFromPB(f.getPB())
+	buf := &bytes.Buffer{}
+	_, err := f.writeBytes(buf)
+	if err != nil {
+		t.Fatalf("got error from writeBytes: %s", err)
+	}
+
+	f2, err := filterFrom(f.getPB(), buf)
+	if err != nil {
+		t.Fatalf("got error from filterFrom: %s", err)
+	}
 
 	if found := f.TestHash(apple); !found {
 		t.Errorf("found no apple, expected apple")

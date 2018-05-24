@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -51,9 +52,16 @@ func startPrinter() func() {
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Println(".")
+				// fmt.Println(".")
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
+				fmt.Printf("Alloc: %d, StackInuse: %d, HeapAlloc: %d, TotalAlloc: %d\n", bToMb(m.Alloc), bToMb(m.StackInuse), bToMb(m.HeapAlloc), bToMb(m.TotalAlloc))
 			}
 		}
 	}()
 	return ticker.Stop
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }
