@@ -1,6 +1,6 @@
 FROM scratch
 
-CMD ["pwned-serve"]
+CMD ["/pwned-serve"]
 
 ENV FILTER_PATH=/pwned-data.bin
 
