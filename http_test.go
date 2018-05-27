@@ -62,8 +62,8 @@ func TestCompatHandler(t *testing.T) {
 		if res.Code != http.StatusNotFound {
 			t.Errorf("got %d, expected %d", res.Code, http.StatusNotFound)
 		}
-		if res.Body.String() != "OK" {
-			t.Errorf("got %s, expected \"OK\"", res.Body.String())
+		if res.Body.String() != "OK\n" {
+			t.Errorf("got %s, expected \"OK\\n\"", res.Body.String())
 		}
 	})
 
@@ -77,8 +77,8 @@ func TestCompatHandler(t *testing.T) {
 			t.Errorf("got %d, expected %d", res.Code, http.StatusOK)
 		}
 
-		if res.Body.String() != "1" {
-			t.Errorf("got %q, expected \"1\"", res.Body.String())
+		if res.Body.String() != "1\n" {
+			t.Errorf("got %q, expected \"1\\n\"", res.Body.String())
 		}
 	})
 }
@@ -95,7 +95,7 @@ func TestHashHandler(t *testing.T) {
 	testHandlerCommon(t, http.HandlerFunc(h.Hash))
 
 	type jsonResponse struct {
-		DefinatelyPwned string
+		InList string `json:"in_list"`
 	}
 
 	t.Run("NotPwnedHash", func(t *testing.T) {
@@ -113,8 +113,8 @@ func TestHashHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
-		if data.DefinatelyPwned != "no" {
-			t.Errorf("got %q, expected \"no\"", data.DefinatelyPwned)
+		if data.InList != "no" {
+			t.Errorf("got %q, expected \"no\"", data.InList)
 		}
 	})
 
@@ -133,8 +133,8 @@ func TestHashHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
-		if data.DefinatelyPwned != "probably" {
-			t.Errorf("got %q, expected \"probably\"", data.DefinatelyPwned)
+		if data.InList != "probably" {
+			t.Errorf("got %q, expected \"probably\"", data.InList)
 		}
 	})
 }

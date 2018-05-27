@@ -14,6 +14,8 @@ type Handler struct {
 	Logger *log.Logger
 }
 
+const newLine = "\n"
+
 // CompatPassword provides compatability with the currently deprecated
 // Have I Been Pwned API (https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByPassword)
 // except that it only supports already hashed passwords at present.
@@ -44,10 +46,10 @@ func (h Handler) CompatPassword(w http.ResponseWriter, r *http.Request) {
 	found := h.Filter.TestHash(hashBytes)
 
 	if found {
-		io.WriteString(w, "1") // We only know if it exists or not
+		io.WriteString(w, "1\n") // We only know if it exists or not
 	} else {
 		w.WriteHeader(http.StatusNotFound)
-		io.WriteString(w, "OK")
+		io.WriteString(w, "OK\n")
 	}
 }
 
@@ -79,8 +81,8 @@ func (h Handler) Hash(w http.ResponseWriter, r *http.Request) {
 	found := h.Filter.TestHash(hashBytes)
 
 	if found {
-		io.WriteString(w, `{"definatelyPwned": "probably"}`) // We only know if it exists or not
+		io.WriteString(w, `{"in_list": "probably"}`+newLine)
 	} else {
-		io.WriteString(w, `{"definatelyPwned": "no"}`)
+		io.WriteString(w, `{"in_list": "no"}`+newLine)
 	}
 }
