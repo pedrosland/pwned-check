@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -25,8 +26,13 @@ func main() {
 	pwnedHandler := pwned.Handler{Filter: filter, Logger: logger}
 	http.Handle("/pwnedpassword/", http.StripPrefix("/pwnedpassword", http.HandlerFunc(pwnedHandler.CompatPassword)))
 	http.Handle("/pwnedhash/", http.StripPrefix("/pwnedhash", http.HandlerFunc(pwnedHandler.Hash)))
+	http.HandleFunc("/healthz", health)
 
 	logger.Printf("starting server on port %s", port)
 
 	logger.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func health(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "OK\n")
 }
