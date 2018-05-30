@@ -79,6 +79,7 @@ func (h Handler) Hash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	found := h.Filter.TestHash(hashBytes)
+	w.Header().Set("Content-Type", "application/json")
 
 	if found {
 		io.WriteString(w, `{"in_list": "probably"}`+newLine)
