@@ -2,6 +2,7 @@ package pwned
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"testing"
 )
@@ -98,7 +99,7 @@ func TestPB(t *testing.T) {
 		t.Fatalf("got error from writeBytes: %s", err)
 	}
 
-	f2, err := filterFrom(f.getPB(), buf)
+	f2, err := filterFrom(context.Background(), f.getPB(), buf)
 	if err != nil {
 		t.Fatalf("got error from filterFrom: %s", err)
 	}

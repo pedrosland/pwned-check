@@ -4,6 +4,7 @@ package pwned
 // See https://github.com/yourbasic/bloom
 
 import (
+	"context"
 	"encoding/binary"
 	"io"
 	"math"
@@ -106,7 +107,7 @@ func (f Filter) writeBytes(w io.Writer) (int, error) {
 	return len(f.data) * 8, nil
 }
 
-func filterFrom(state *pb.State_Filter, r io.Reader) (*Filter, error) {
+func filterFrom(ctx context.Context, state *pb.State_Filter, r io.Reader) (*Filter, error) {
 	data := make([]uint64, state.Size/8)
 	b := make([]byte, 8, 8)
 
@@ -114,6 +115,11 @@ func filterFrom(state *pb.State_Filter, r io.Reader) (*Filter, error) {
 		_, err := r.Read(b)
 		if err != nil && i < len(data)-1 {
 			return nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+		default:
 		}
 		data[i] = binary.BigEndian.Uint64(b)
 	}

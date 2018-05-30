@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -71,7 +72,7 @@ func ReadPasswordList(filter *Filter, numHashes int64, r io.Reader) error {
 }
 
 // LoadFilterFromFile reads a saved Filter from file and returns it.
-func LoadFilterFromFile(loadPath string) *Filter {
+func LoadFilterFromFile(ctx context.Context, loadPath string) *Filter {
 	log.Printf("loading filter from file %s", loadPath)
 
 	f, err := os.Open(loadPath)
@@ -80,7 +81,7 @@ func LoadFilterFromFile(loadPath string) *Filter {
 	}
 	defer f.Close() // ignore error, we were only reading
 
-	filter, err := LoadFilter(f)
+	filter, err := LoadFilter(ctx, f)
 	if err != nil {
 		log.Printf("error loading filter: %s", err)
 	}
@@ -91,7 +92,7 @@ func LoadFilterFromFile(loadPath string) *Filter {
 }
 
 // LoadFilter reads a Filter from a reader and returns it.
-func LoadFilter(r io.Reader) (*Filter, error) {
+func LoadFilter(ctx context.Context, r io.Reader) (*Filter, error) {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, fmt.Errorf("create gzip reader: %s", err)
@@ -108,7 +109,7 @@ func LoadFilter(r io.Reader) (*Filter, error) {
 		return nil, fmt.Errorf("unsupported version: %d", state.Version)
 	}
 
-	f, err := filterFrom(state.Filter, gz)
+	f, err := filterFrom(ctx, state.Filter, gz)
 	if err != nil {
 		return nil, fmt.Errorf("decompress file: %s", err)
 	}
