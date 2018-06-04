@@ -11,7 +11,42 @@ import (
 	"time"
 
 	pwned "github.com/pedrosland/pwned-check"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	filterCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pwned_password_checks_total",
+			Help: "A counter for pwned password checks.",
+		},
+		[]string{"handler", "in_list"},
+	)
+
+	// duration is partitioned by the HTTP method and handler. It uses custom
+	// buckets based on the expected request duration.
+	reqDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "A histogram of latencies for requests.",
+			Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1},
+		},
+		[]string{"handler", "method"},
+	)
+
+	reqCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "api_requests_total",
+			Help: "A counter for HTTP requests.",
+		},
+		[]string{"code", "handler"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(filterCounter, reqDuration, reqCounter)
+}
 
 func main() {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
@@ -46,9 +81,19 @@ func main() {
 	filter := pwned.LoadFilterFromFile(ctx, loadPath)
 	cancel() // free resources
 
-	pwnedHandler := pwned.Handler{Filter: filter, Logger: logger}
-	http.Handle("/pwnedpassword/", http.StripPrefix("/pwnedpassword", http.HandlerFunc(pwnedHandler.CompatPassword)))
-	http.Handle("/pwnedhash/", http.StripPrefix("/pwnedhash", http.HandlerFunc(pwnedHandler.Hash)))
+	pwnedHandler := pwned.Handler{Filter: filter, Logger: logger, MetricFunc: metricFunc}
+	passwdHandler := promhttp.InstrumentHandlerDuration(reqDuration.MustCurryWith(prometheus.Labels{"handler": "pwnedpassword"}),
+		promhttp.InstrumentHandlerCounter(reqCounter.MustCurryWith(prometheus.Labels{"handler": "pwnedpassword"}),
+			http.StripPrefix("/pwnedpassword", http.HandlerFunc(pwnedHandler.CompatPassword)),
+		))
+	hashHandler := promhttp.InstrumentHandlerDuration(reqDuration.MustCurryWith(prometheus.Labels{"handler": "pwnedhash"}),
+		promhttp.InstrumentHandlerCounter(reqCounter.MustCurryWith(prometheus.Labels{"handler": "pwnedhash"}),
+			http.StripPrefix("/pwnedhash", http.HandlerFunc(pwnedHandler.Hash)),
+		))
+
+	http.Handle("/pwnedpassword/", passwdHandler)
+	http.Handle("/pwnedhash/", hashHandler)
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/healthz", health)
 
 	logger.Printf("starting server on port %s", port)
@@ -63,4 +108,12 @@ func health(w http.ResponseWriter, r *http.Request) {
 	// HTTP server isn't alive. When the HTTP server is shutting down, new connections
 	// aren't accepted.
 	io.WriteString(w, "OK\n")
+}
+
+func metricFunc(handlerName string, inList bool) {
+	inListStr := "false"
+	if inList {
+		inListStr = "true"
+	}
+	filterCounter.WithLabelValues(handlerName, inListStr).Inc()
 }

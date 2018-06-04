@@ -8,10 +8,16 @@ import (
 	"strings"
 )
 
-// Handler has HTTP HandlerFuncs
+// MetricFunc is a function to record metrics.
+// The first argument is the handler (password or hash).
+// The second argument is in_list.
+type MetricFunc func(string, bool)
+
+// Handler provides HTTP HandlerFuncs
 type Handler struct {
-	Filter *Filter
-	Logger *log.Logger
+	Filter     *Filter
+	Logger     *log.Logger
+	MetricFunc MetricFunc
 }
 
 const newLine = "\n"
@@ -44,6 +50,9 @@ func (h Handler) CompatPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	found := h.Filter.TestHash(hashBytes)
+	if h.MetricFunc != nil {
+		h.MetricFunc("password", found)
+	}
 
 	if found {
 		io.WriteString(w, "1\n") // We only know if it exists or not
@@ -79,6 +88,9 @@ func (h Handler) Hash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	found := h.Filter.TestHash(hashBytes)
+	if h.MetricFunc != nil {
+		h.MetricFunc("hash", found)
+	}
 	w.Header().Set("Content-Type", "application/json")
 
 	if found {

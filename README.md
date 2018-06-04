@@ -1,5 +1,8 @@
 # Pwned Check
 
+[![Run Status](https://api.shippable.com/projects/5b057428f70bc2070084bf3a/badge?branch=master)](https://app.shippable.com/github/pedrosland/pwned-check)
+[![Coverage Badge](https://api.shippable.com/projects/5b057428f70bc2070084bf3a/coverageBadge?branch=master)](https://app.shippable.com/github/pedrosland/pwned-check)
+
 This library/self-hosted API makes it easy to check if a password is known to be leaked and available publicly.
 
 ## How does it work?
