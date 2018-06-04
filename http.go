@@ -16,7 +16,7 @@ type Handler struct {
 
 const newLine = "\n"
 
-// CompatPassword provides compatability with the currently deprecated
+// CompatPassword provides compatibility with the currently deprecated
 // Have I Been Pwned API (https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByPassword)
 // except that it only supports already hashed passwords at present.
 func (h Handler) CompatPassword(w http.ResponseWriter, r *http.Request) {

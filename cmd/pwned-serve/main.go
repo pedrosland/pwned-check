@@ -37,8 +37,9 @@ func main() {
 		<-sigs
 		logger.Println("shutting down")
 		cancel()
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		server.Shutdown(ctx)
+		cancel()
 		logger.Println("graceful shutdown complete")
 	}()
 
