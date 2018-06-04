@@ -2,6 +2,8 @@
 
 [![Run Status](https://api.shippable.com/projects/5b057428f70bc2070084bf3a/badge?branch=master)](https://app.shippable.com/github/pedrosland/pwned-check)
 [![Coverage Badge](https://api.shippable.com/projects/5b057428f70bc2070084bf3a/coverageBadge?branch=master)](https://app.shippable.com/github/pedrosland/pwned-check)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pedrosland/pwned-check)](https://goreportcard.com/report/github.com/pedrosland/pwned-check)
+[![GoDoc](https://godoc.org/github.com/pedrosland/pwned-check?status.svg)](https://godoc.org/github.com/pedrosland/pwned-check)
 
 This library/self-hosted API makes it easy to check if a password is known to be leaked and available publicly.
 
