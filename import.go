@@ -83,7 +83,7 @@ func LoadFilterFromFile(ctx context.Context, loadPath string) *Filter {
 
 	filter, err := LoadFilter(ctx, f)
 	if err != nil {
-		log.Printf("error loading filter: %s", err)
+		log.Fatalf("error loading filter: %s", err)
 	}
 
 	log.Printf("loaded %d entries from %s", filter.Count(), loadPath)
