@@ -28,7 +28,7 @@ var (
 	// buckets based on the expected request duration.
 	reqDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
+			Name:    "http_api_request_duration_seconds",
 			Help:    "A histogram of latencies for requests.",
 			Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1},
 		},
@@ -37,7 +37,7 @@ var (
 
 	reqCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "api_requests_total",
+			Name: "http_api_requests_total",
 			Help: "A counter for HTTP requests.",
 		},
 		[]string{"code", "handler"},

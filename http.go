@@ -1,6 +1,7 @@
 package pwned
 
 import (
+	"crypto/sha1"
 	"encoding/hex"
 	"io"
 	"log"
@@ -22,9 +23,7 @@ type Handler struct {
 
 const newLine = "\n"
 
-// CompatPassword provides compatibility with the currently deprecated
-// Have I Been Pwned API (https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByPassword)
-// except that it only supports already hashed passwords at present.
+// CompatPassword provides compatibility with the old API.
 func (h Handler) CompatPassword(w http.ResponseWriter, r *http.Request) {
 	hash := strings.Trim(r.URL.Path, "/")
 
@@ -33,20 +32,19 @@ func (h Handler) CompatPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(hash) != 40 {
-		msg := "expected hexadecimal encoded sha1 string of 40 characters"
-		h.Logger.Println(msg)
-		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, msg)
-		return
+	var hashBytes []byte
+	var err error
+
+	if len(hash) == 40 {
+		hashBytes, err = hex.DecodeString(hash)
+		if err != nil {
+			hashBytes = nil
+		}
 	}
 
-	hashBytes, err := hex.DecodeString(hash)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, "Expected hexadecimal encoded sha1 string")
-		h.Logger.Printf("error decoding hex string %q: %s", hash, err)
-		return
+	if hashBytes == nil {
+		sum := sha1.Sum([]byte(hash))
+		hashBytes = sum[:]
 	}
 
 	found := h.Filter.TestHash(hashBytes)
