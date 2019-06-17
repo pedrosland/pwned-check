@@ -43,7 +43,7 @@ func NewFilter(n int, p int) *Filter {
 // AddHash adds s to the filter and tells if s was already a likely member.
 func (f *Filter) AddHash(b []byte) bool {
 	// yes, we are losing data here
-	h1 := binary.BigEndian.Uint64(b[0:8]) + uint64(binary.BigEndian.Uint32(b[8:12]))
+	h1 := binary.BigEndian.Uint64(b[0:8]) ^ uint64(binary.BigEndian.Uint32(b[8:12]))
 	h2 := binary.BigEndian.Uint64(b[12:])
 
 	trunc := uint64(len(f.data))<<shift - 1
@@ -66,7 +66,7 @@ func (f *Filter) AddHash(b []byte) bool {
 // TestHash tells if s is a likely member of the filter.
 // If true, s is probably a member; if false, s is definitely not a member.
 func (f *Filter) TestHash(b []byte) bool {
-	h1 := binary.BigEndian.Uint64(b[0:8]) + uint64(binary.BigEndian.Uint32(b[8:12]))
+	h1 := binary.BigEndian.Uint64(b[0:8]) ^ uint64(binary.BigEndian.Uint32(b[8:12]))
 	h2 := binary.BigEndian.Uint64(b[12:])
 
 	trunc := uint64(len(f.data))<<shift - 1
