@@ -20,7 +20,7 @@ build:
     - go get github.com/AlekSi/gocov-xml
     - go get github.com/jstemmer/go-junit-report
     # fetch pwned-passwords if not already there
-    - export PWNED_FILENAME=pwned-passwords-sha1-ordered-by-count-v4.7z
+    - export PWNED_FILENAME=pwned-passwords-sha1-ordered-by-count-v4.7z NUM_PASSWORDS=551509767
     - $SHIPPABLE_BUILD_DIR/.shippable/get-pwned-passwords.sh
     # run tests
     - go test -v -coverprofile=coverage.out ./... 2>&1 | tee test.out
