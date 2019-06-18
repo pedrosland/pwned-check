@@ -23,7 +23,7 @@ build:
     - export PWNED_FILENAME=pwned-passwords-sha1-ordered-by-count-v4.7z NUM_PASSWORDS=551509767
     - $SHIPPABLE_BUILD_DIR/.shippable/get-pwned-passwords.sh
     # run tests
-    - go test -v -coverprofile=coverage.out ./... 2>&1 | tee test.out
+    - CGO_ENABLED=0 go test -v -coverprofile=coverage.out ./... 2>&1 | tee test.out
     - go-junit-report > shippable/testresults/report.xml < test.out
     - gocov convert coverage.out | gocov-xml > shippable/codecoverage/report.xml
     # build stuff
